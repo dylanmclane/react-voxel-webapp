@@ -1,43 +1,59 @@
-import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import React, { useCallback, useState } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, Box } from '@react-three/drei';
+
+const Voxel = ({ position, onClick }) => (
+  <Box position={position} onClick={onClick}>
+    <meshStandardMaterial attach="material" color="green" />
+  </Box>
+);
+
+const GroundPlane = () => {
+  const { viewport } = useThree();
+  return (
+    <mesh rotation={-Math.PI / 2} position={[0, -0.5, 0]} receiveShadow>
+      <planeGeometry attach="geometry" args={[viewport.width, viewport.height]} />
+      <meshStandardMaterial attach="material" color="#aaa" />
+    </mesh>
+  );
+};
+
+const SimpleCube = () => (
+    <mesh position={[0, 1, 0]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color="orange" />
+    </mesh>
+  );
 
 const VoxelScene = () => {
-    const mountRef = useRef(null);
+  const [voxels, setVoxels] = useState([]);
 
-    useEffect(() => {
-        //Scene, camer, and renderer setup
-        const scene = new THREE.Scene(); 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        mountRef.current.appendChild(renderer.domElement);
+  const addVoxel = useCallback((e) => {
+    // Calculate where to add the voxel
+    const [x, y, z] = Object.values(e.point).map(coord => Math.ceil(coord));
+    setVoxels([...voxels, { position: [x, y, z], id: `${x}-${y}-${z}` }]);
+  }, [voxels]);
 
-        // Voxel (cubes) setup
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+  const removeVoxel = useCallback((id) => {
+    setVoxels(voxels.filter(voxel => voxel.id !== id));
+  }, [voxels]);
 
-        camera.position.z = 5;
-
-        // Animation loop
-        const animate = function () {
-            requestAnimationFrame(animate);
-
-            // Rotate cube
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-
-            renderer.render(scene, camera);
-        };
-
-        animate();
-
-        // Cleanup on component unmount
-        return () => mountRef.current.removeChild(renderer.domElement);
-    }, []);
-
-    return <div ref={mountRef} />;
+  return (
+    <Canvas style={{ height: "400px", width: "100%" }}>
+      <ambientLight intensity={0.5} />
+      <spotLight position={[10, 15, 10]} angle={0.3} penumbra={1} />
+      <OrbitControls />
+      <GroundPlane />
+      <SimpleCube />
+      {voxels.map(voxel => (
+        <Voxel key={voxel.id} position={voxel.position} onClick={() => removeVoxel(voxel.id)} />
+      ))}
+      <mesh onClick={addVoxel}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial opacity={0} transparent />
+      </mesh>
+    </Canvas>
+  );
 };
 
 export default VoxelScene;
