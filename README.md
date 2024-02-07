@@ -1,3 +1,5 @@
+This project is to test voxel graphics using three.js. This is for a potential game idea. 
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
